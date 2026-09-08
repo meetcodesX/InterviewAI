@@ -1,9 +1,5 @@
 # InterviewAI – Agentic Interview Trainer
-
 > An AI-powered, personalized interview trainer that uses IBM Granite, RAG, and LangGraph to deliver adaptive interview experiences.
-
-**AICTE 2026 Problem Statement #22 – Interview Trainer Agent**
-
 ---
 
 ## 📋 Project Overview
