@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+sqlalchemy
+pydantic>=2.0
+PyMuPDF
+langchain
+langchain-community
+langchain-text-splitters
+langgraph
+chromadb
+python-multipart
+httpx
+ibm-watsonx-ai
+sentence-transformers
+aiofiles
