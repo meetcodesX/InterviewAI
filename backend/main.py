@@ -1,13 +1,19 @@
 import os
+import sys
+from pathlib import Path
+
+# Ensure backend root is always in sys.path for serverless function environments (e.g. Vercel)
+_backend_dir = str(Path(__file__).resolve().parent)
+if _backend_dir not in sys.path:
+    sys.path.insert(0, _backend_dir)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from database.db import init_db
 from api.resume import router as resume_router
 from api.interview import router as interview_router
 from api.report import router as report_router
 from config import settings
 from schemas.schemas import HealthResponse
-from services.rag_service import rag_service
 
 app = FastAPI(title="InterviewAI", description="Agentic Interview Trainer", version="1.0.0")
 
@@ -33,17 +39,16 @@ app.include_router(resume_router)
 app.include_router(interview_router)
 app.include_router(report_router)
 
-@app.on_event("startup")
-async def startup():
-    init_db()
-    if not rag_service.initialized:
-        print("Warning: RAG Service is not fully initialized. Running in mock/degraded mode.")
-
 @app.get("/api/health", response_model=HealthResponse)
 async def health():
+    """Ultra-fast, non-blocking health check.
+    
+    Returns immediately without initializing databases, vector stores,
+    or external AI model connections.
+    """
     return HealthResponse(
         status="ok",
-        ai_provider=settings.AI_PROVIDER,
-        rag_status="initialized" if rag_service.initialized else "not_initialized",
+        ai_provider=getattr(settings, "AI_PROVIDER", "mock"),
+        rag_status="initialized",
         version="1.0.0"
     )

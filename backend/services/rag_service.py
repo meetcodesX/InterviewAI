@@ -103,36 +103,39 @@ class RAGService:
         self.docs_cache: List[KnowledgeChunk] = []
         self.doc_freq: Dict[str, int] = {}
         self.num_docs: int = 0
+        self._ingested = False
 
-        # Attempt to load heavy vector dependencies optionally
-        try:
-            import chromadb
-            from sentence_transformers import SentenceTransformer
+    def _ensure_initialized(self) -> None:
+        """Lazily index the markdown knowledge base on first retrieval request."""
+        if not self._ingested:
+            # In serverless environments (e.g. Vercel), do not attempt to load local transformers
+            if not os.getenv("VERCEL") and not os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
+                try:
+                    import chromadb
+                    from sentence_transformers import SentenceTransformer
 
-            persist_dir = os.path.abspath(settings.CHROMA_PERSIST_DIR)
-            os.makedirs(persist_dir, exist_ok=True)
+                    persist_dir = os.path.abspath(settings.CHROMA_PERSIST_DIR)
+                    os.makedirs(persist_dir, exist_ok=True)
 
-            self.client = chromadb.PersistentClient(path=persist_dir)
-            self.model = SentenceTransformer("all-MiniLM-L6-v2")
-            self.collection = self.client.get_or_create_collection(
-                name=self.collection_name,
-                metadata={"hnsw:space": "cosine"}
-            )
-            logger.info(f"RAGService initialized with ChromaDB at {persist_dir}")
-        except Exception as e:
-            logger.info(f"Heavy ML packages not loaded ({e}). Using lightweight built-in knowledge retriever.")
-            self.client = None
-            self.collection = None
-            self.model = None
+                    self.client = chromadb.PersistentClient(path=persist_dir)
+                    self.model = SentenceTransformer("all-MiniLM-L6-v2")
+                    self.collection = self.client.get_or_create_collection(
+                        name=self.collection_name,
+                        metadata={"hnsw:space": "cosine"}
+                    )
+                    logger.info(f"RAGService initialized with ChromaDB at {persist_dir}")
+                except Exception as e:
+                    logger.info(f"Heavy ML packages not loaded ({e}). Using lightweight built-in knowledge retriever.")
+                    self.client = None
+                    self.collection = None
+                    self.model = None
 
-        # Always index the markdown knowledge base directly
-        try:
-            self.ingest_documents()
-        except Exception as ingest_err:
-            logger.error(f"Failed to ingest knowledge markdown: {ingest_err}")
-
-        # Set initialized flag based on availability of documents
-        self.initialized = len(self.docs_cache) > 0 or (self.collection is not None and self.collection.count() > 0)
+            try:
+                self.ingest_documents()
+            except Exception as ingest_err:
+                logger.error(f"Failed to ingest knowledge markdown: {ingest_err}")
+            self._ingested = True
+            self.initialized = len(self.docs_cache) > 0 or (self.collection is not None and self.collection.count() > 0)
 
     def ingest_documents(self, data_dir: Optional[str] = None) -> int:
         """Loads all markdown files from data_dir, chunks them, and indexes them in cache and ChromaDB (if active)."""
@@ -226,6 +229,7 @@ class RAGService:
 
     def retrieve_context(self, query: str, filters: Optional[dict] = None, k: int = 3) -> List[str]:
         """Retrieves top-k relevant chunks from ChromaDB (if available) or built-in BM25/TF-IDF ranker."""
+        self._ensure_initialized()
         # 1. Try ChromaDB if fully loaded and populated
         if self.collection is not None and self.model is not None:
             try:
@@ -354,6 +358,7 @@ class RAGService:
         asked_normalized_questions: set
     ) -> Optional[dict]:
         """Extracts a question from the local markdown knowledge base that has not been asked."""
+        self._ensure_initialized()
         data_path = Path(settings.DATA_DIR)
         clean_cat = category.lower().strip()
 

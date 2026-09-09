@@ -20,10 +20,18 @@ else:
 
 
 def _resolve_database_url() -> str:
-    """Ensure consistent path for SQLite, supporting /tmp for serverless read-only filesystems."""
+    """Ensure consistent path for SQLite or PostgreSQL, supporting /tmp for serverless read-only filesystems."""
     raw_url = os.getenv("DATABASE_URL", "").strip()
+
+    # If PostgreSQL connection string is provided
+    if raw_url:
+        if raw_url.startswith("postgres://"):
+            return raw_url.replace("postgres://", "postgresql://", 1)
+        if raw_url.startswith("postgresql://"):
+            return raw_url
+
+    # Fallback to SQLite (local file or serverless /tmp)
     if not raw_url or raw_url.startswith("sqlite:///./") or raw_url == "sqlite:///interview_ai.db":
-        # Check if running in Vercel/serverless where only /tmp is writable
         if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
             db_file = Path("/tmp/interview_ai.db")
         else:

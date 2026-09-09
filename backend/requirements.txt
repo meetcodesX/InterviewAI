@@ -2,6 +2,7 @@ fastapi
 uvicorn[standard]
 python-dotenv
 sqlalchemy
+psycopg2-binary
 pydantic>=2.0
 PyMuPDF
 langchain-text-splitters
