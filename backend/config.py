@@ -28,6 +28,7 @@ def _resolve_database_url() -> str:
             db_file = Path("/tmp/interview_ai.db")
         else:
             db_file = (BASE_DIR / "interview_ai.db").resolve()
+        db_file.parent.mkdir(parents=True, exist_ok=True)
         return f"sqlite:///{db_file.as_posix()}"
     return raw_url
 
@@ -37,8 +38,11 @@ def _resolve_chroma_dir() -> str:
     raw_dir = os.getenv("CHROMA_PERSIST_DIR", "").strip()
     if not raw_dir or raw_dir.startswith("./") or raw_dir == "chroma_db":
         if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
-            return "/tmp/chroma_db"
-        return str((BASE_DIR / "chroma_db").resolve())
+            chroma_path = Path("/tmp/chroma_db")
+        else:
+            chroma_path = (BASE_DIR / "chroma_db").resolve()
+        chroma_path.mkdir(parents=True, exist_ok=True)
+        return str(chroma_path)
     return raw_dir
 
 
@@ -50,7 +54,6 @@ class Settings:
 
     # IBM watsonx.ai
     IBM_API_KEY: str = os.getenv("IBM_API_KEY", "")
-    IBM_PROJECT_ID: str = os.getenv("IBM_PROJECT_ID", "")
     IBM_URL: str = os.getenv("IBM_URL", "https://us-south.ml.cloud.ibm.com")
     IBM_GRANITE_MODEL: str = os.getenv("IBM_GRANITE_MODEL", "ibm/granite-3-8b-instruct")
 

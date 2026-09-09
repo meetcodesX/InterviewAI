@@ -1,0 +1,56 @@
+# Local virtual environments
+venv/
+venv2/
+.venv/
+env/
+ENV/
+
+# Python cache and bytecode
+**/__pycache__/
+**/*.py[cod]
+**/*.pyo
+**/*.pyd
+.pytest_cache/
+
+# Databases and SQLite files
+*.db
+*.sqlite
+*.sqlite3
+backend/*.db
+backend/*.sqlite
+backend/*.sqlite3
+backend/regression_test.db
+backend/interview_ai.db
+
+# ChromaDB local directories and vector test caches
+chroma_db/
+**/chroma_db/
+test_chroma/
+**/test_chroma/
+backend/chroma_db/
+backend/test_chroma/
+
+# Tests and development scripts
+backend/tests/
+sample_resumes/
+scripts/
+run_app.bat
+powershell.cmd
+docker-compose.yml
+
+# Frontend local build cache & dependencies
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# Git and IDE configs
+.git/
+.github/
+.vscode/
+.idea/
+
+# Environment files with secrets
+.env
+.env.local
+.env.*.local
+!.env.example

@@ -1,0 +1,26 @@
+# Local virtual environments
+venv/
+venv2/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# ChromaDB
+chroma_db/
+test_chroma/
+
+# Tests & samples
+tests/
+sample_resumes/
+powershell.cmd

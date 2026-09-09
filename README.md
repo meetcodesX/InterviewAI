@@ -229,17 +229,54 @@ Visit `http://localhost:3000`
 
 ---
 
+## ☁️ Vercel Deployment (Vercel Services)
+
+InterviewAI is structured as a full-stack monorepo using **Vercel Services**:
+- **Frontend Service**: Next.js 14 (`frontend/`)
+- **Backend Service**: FastAPI Python app (`backend/`, entrypoint `main:app`)
+- **Routing**: Single-domain routing configured in root `vercel.json` (`/api/*` -> backend, `/*` -> frontend).
+
+### Step-by-Step Vercel Deployment
+
+1. **Import Repository to Vercel**:
+   - Go to [Vercel Dashboard](https://vercel.com/new).
+   - Import your GitHub repository (`meetcodesX/InterviewAI`).
+   - Leave the root directory as the repository root (`.`). Vercel will detect `vercel.json`.
+
+2. **Configure Environment Variables in Vercel Dashboard**:
+   Go to **Project Settings → Environment Variables** and configure:
+   - `AI_PROVIDER`: `ibm_granite`
+   - `IBM_API_KEY`: Your real IBM watsonx / Cloud API key (Never commit this to Git)
+   - `IBM_PROJECT_ID`: Your watsonx.ai project GUID
+   - `IBM_URL`: `https://us-south.ml.cloud.ibm.com` (or your regional endpoint)
+   - `IBM_GRANITE_MODEL`: `ibm/granite-3-8b-instruct`
+   - `DATABASE_URL`: `sqlite:////tmp/interview_ai.db` (or external PostgreSQL connection string)
+   - `CHROMA_PERSIST_DIR`: `/tmp/chroma_db`
+
+3. **Deploy**:
+   - Click **Deploy**. Both the Next.js frontend and FastAPI backend are deployed under the same domain.
+   - Test application health: `https://your-app.vercel.app/api/health` (returns `{"status": "ok", ...}`).
+
+### ⚠️ Serverless Deployment Considerations
+
+- **Filesystem Ephemerality**: In Vercel serverless environments, only `/tmp` is writable. Local SQLite databases and ChromaDB collections stored on `/tmp` are ephemeral and will not persist across container cold starts or regional instances. For persistent multi-user production data, configure a hosted PostgreSQL database (e.g. Supabase, Neon) via `DATABASE_URL` and a hosted vector database (e.g. Pinecone, Chroma Cloud).
+- **Cold Start Times**: Cold starts may take a few seconds during the initial invocation while `sentence-transformers` and ML dependencies load into memory.
+
+---
+
 ## 📝 Environment Variables
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `AI_PROVIDER` | Yes | `ibm_granite` or `mock` |
-| `IBM_API_KEY` | For IBM mode | IBM Cloud API key |
+| `AI_PROVIDER` | Yes | `ibm_granite` (production) or `mock` (local development) |
+| `IBM_API_KEY` | For IBM mode | IBM Cloud API key (Keep secret, configure in Vercel dashboard) |
 | `IBM_PROJECT_ID` | For IBM mode | watsonx.ai project ID |
 | `IBM_URL` | For IBM mode | IBM watsonx.ai endpoint |
 | `IBM_GRANITE_MODEL` | For IBM mode | Model ID (e.g., `ibm/granite-3-8b-instruct`) |
-| `DATABASE_URL` | No | SQLite URL (default: `sqlite:///./interview_ai.db`) |
-| `CHROMA_PERSIST_DIR` | No | ChromaDB storage path |
+| `DATABASE_URL` | No | SQLite or PostgreSQL URL (serverless uses `/tmp/interview_ai.db`) |
+| `CHROMA_PERSIST_DIR` | No | ChromaDB storage path (serverless uses `/tmp/chroma_db`) |
+| `FRONTEND_URL` | No | Frontend URL for CORS (default: `http://localhost:3000`) |
+| `BACKEND_URL` | No | Backend URL (default: `http://localhost:8000`) |
 
 ---
 

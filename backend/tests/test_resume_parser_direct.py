@@ -8,7 +8,8 @@ import pymupdf as fitz
 from services.resume_parser import parse_resume_text
 
 # 1. Test Alex Sharma
-doc1 = fitz.open("../sample_resumes/alex_sharma_ml_engineer.pdf")
+sample_dir = Path(__file__).resolve().parent.parent.parent / "sample_resumes"
+doc1 = fitz.open(str(sample_dir / "alex_sharma_ml_engineer.pdf"))
 text1 = "".join(p.get_text() for p in doc1)
 p1 = parse_resume_text(text1)
 
@@ -19,7 +20,7 @@ print("Skills:", p1.skills[:6])
 print("Education:", p1.education)
 
 # 2. Test Priya Patel
-doc2 = fitz.open("../sample_resumes/priya_patel_fullstack_dev.pdf")
+doc2 = fitz.open(str(sample_dir / "priya_patel_fullstack_dev.pdf"))
 text2 = "".join(p.get_text() for p in doc2)
 p2 = parse_resume_text(text2)
 

@@ -374,6 +374,7 @@ Return ONLY valid JSON matching this schema:
         sim_score = 0.5
         if rag_service.model is not None:
             try:
+                import numpy as np
                 ref_text = question + "\n" + (rag_context if rag_context else "")
                 ans_emb = rag_service.model.encode([cleaned_ans])
                 ref_emb = rag_service.model.encode([ref_text])
@@ -383,6 +384,13 @@ Return ONLY valid JSON matching this schema:
                 sim_score = float(np.dot(ans_norm, ref_norm.T)[0][0])
             except Exception as e:
                 logger.error(f"Semantic scoring error: {e}")
+        else:
+            # Token and concept overlap against question and RAG context (zero-dependency)
+            ref_words = set(re.findall(r"\b\w{3,}\b", (question + " " + (rag_context or "")).lower()))
+            ans_meaningful = set(re.findall(r"\b\w{3,}\b", ans_lower))
+            if ref_words and ans_meaningful:
+                overlap = len(ans_meaningful & ref_words)
+                sim_score = min(1.0, overlap / max(5.0, len(ans_meaningful) * 0.4))
 
         # Domain concept matching
         found_concepts = []

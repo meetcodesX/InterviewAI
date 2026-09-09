@@ -1,13 +1,14 @@
 """Persistent Question Deduplication and Semantic Duplicate Detection.
 
 Ensures questions are not repeated within an interview or across new interviews.
+Supports both embedding-based cosine similarity (when SentenceTransformer is loaded)
+and zero-dependency token/n-gram Jaccard matching for lightweight serverless deployments.
 """
 
 import re
 import uuid
 import logging
 from typing import Tuple, List, Optional
-import numpy as np
 from sqlalchemy.orm import Session
 
 from config import settings
@@ -21,7 +22,6 @@ def normalize_question(text: str) -> str:
     """Normalize question string for exact matching (lowercase, no punctuation, single spaces)."""
     if not text:
         return ""
-    # Remove punctuation, lowercase, collapse whitespace
     cleaned = re.sub(r"[^\w\s]", "", text.lower())
     return " ".join(cleaned.split())
 
@@ -77,7 +77,7 @@ class QuestionDedupService:
         if exact_match:
             return True, 1.0, f"Exact duplicate in history: '{exact_match.question_text}'"
 
-        # 3. Semantic similarity check using SentenceTransformer embeddings
+        # 3. Retrieve historical questions for semantic / token comparison
         try:
             all_history = (
                 db.query(QuestionHistory.question_text)
@@ -86,35 +86,71 @@ class QuestionDedupService:
                 .all()
             )
             history_texts = [r[0] for r in all_history if r[0]]
-            
+
             # Also include current session questions if not in history
             if current_interview_questions:
                 for q in current_interview_questions:
                     if q not in history_texts:
                         history_texts.append(q)
 
-            if not history_texts or rag_service.model is None:
+            if not history_texts:
                 return False, 0.0, ""
 
-            # Compute embeddings
-            cand_emb = rag_service.model.encode([candidate_question])
-            hist_embs = rag_service.model.encode(history_texts)
+            # 3A. Semantic similarity check via SentenceTransformer (if available)
+            if rag_service.model is not None:
+                try:
+                    import numpy as np
+                    cand_emb = rag_service.model.encode([candidate_question])
+                    hist_embs = rag_service.model.encode(history_texts)
 
-            # Cosine similarity
-            cand_norm = cand_emb / (np.linalg.norm(cand_emb, axis=1, keepdims=True) + 1e-9)
-            hist_norm = hist_embs / (np.linalg.norm(hist_embs, axis=1, keepdims=True) + 1e-9)
+                    cand_norm = cand_emb / (np.linalg.norm(cand_emb, axis=1, keepdims=True) + 1e-9)
+                    hist_norm = hist_embs / (np.linalg.norm(hist_embs, axis=1, keepdims=True) + 1e-9)
 
-            sims = np.dot(cand_norm, hist_norm.T)[0]
-            max_idx = int(np.argmax(sims))
-            max_sim = float(sims[max_idx])
+                    sims = np.dot(cand_norm, hist_norm.T)[0]
+                    max_idx = int(np.argmax(sims))
+                    max_sim = float(sims[max_idx])
 
-            if max_sim >= self.threshold:
-                matched = history_texts[max_idx]
-                return True, max_sim, f"Semantic duplicate ({max_sim:.2f} >= {self.threshold}): '{matched}'"
+                    if max_sim >= self.threshold:
+                        matched = history_texts[max_idx]
+                        return True, max_sim, f"Semantic duplicate ({max_sim:.2f} >= {self.threshold}): '{matched}'"
 
-            return False, max_sim, ""
+                    return False, max_sim, ""
+                except Exception as model_err:
+                    logger.warning(f"SentenceTransformer check failed: {model_err}. Falling back to token matching.")
+
+            # 3B. Built-in fast token & n-gram Jaccard duplicate detection (zero-dependency)
+            cand_tokens = set(re.findall(r"\b\w{3,}\b", candidate_question.lower()))
+            cand_words = re.findall(r"\b\w+\b", candidate_question.lower())
+            cand_bigrams = set(zip(cand_words[:-1], cand_words[1:])) if len(cand_words) > 1 else set()
+
+            best_sim = 0.0
+            best_match = ""
+
+            for hist_q in history_texts:
+                hist_tokens = set(re.findall(r"\b\w{3,}\b", hist_q.lower()))
+                hist_words = re.findall(r"\b\w+\b", hist_q.lower())
+                hist_bigrams = set(zip(hist_words[:-1], hist_words[1:])) if len(hist_words) > 1 else set()
+
+                token_union = cand_tokens | hist_tokens
+                token_jaccard = (len(cand_tokens & hist_tokens) / len(token_union)) if token_union else 0.0
+
+                bigram_union = cand_bigrams | hist_bigrams
+                bigram_jaccard = (len(cand_bigrams & hist_bigrams) / len(bigram_union)) if bigram_union else 0.0
+
+                sim = 0.5 * token_jaccard + 0.5 * bigram_jaccard if bigram_union else token_jaccard
+
+                if sim > best_sim:
+                    best_sim = sim
+                    best_match = hist_q
+
+            # Semantic threshold for token/bigram similarity
+            sem_threshold = min(self.threshold, 0.75)
+            if best_sim >= sem_threshold:
+                return True, best_sim, f"Semantic duplicate ({best_sim:.2f} >= {sem_threshold}): '{best_match}'"
+
+            return False, best_sim, ""
         except Exception as e:
-            logger.error(f"Semantic duplicate check error: {e}")
+            logger.error(f"Duplicate check error: {e}")
             return False, 0.0, ""
 
     def record_question(
