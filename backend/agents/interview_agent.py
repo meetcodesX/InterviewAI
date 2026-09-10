@@ -9,7 +9,7 @@ import uuid
 import logging
 from langgraph.graph import StateGraph, END
 from services.rag_service import rag_service
-from services.granite_service import granite_service
+from services.gemini_service import gemini_service
 from services.evaluation_service import evaluation_service
 
 logger = logging.getLogger(__name__)
@@ -73,7 +73,7 @@ def retrieve_context(state: InterviewState) -> InterviewState:
 
 
 def generate_question(state: InterviewState) -> InterviewState:
-    """Generate interview question using IBM Granite and RAG context with persistent deduplication."""
+    """Generate interview question using Google Gemini and RAG context with persistent deduplication."""
     from services.question_dedup_service import question_dedup_service, normalize_question
     from database.db import get_db
 
@@ -85,7 +85,7 @@ def generate_question(state: InterviewState) -> InterviewState:
             q.get("question") for q in state.get("questions", []) if isinstance(q, dict) and q.get("question")
         ]
         
-        # Also fetch recent questions from history to pass into Granite context so it avoids them
+        # Also fetch recent questions from history to pass into Gemini context so it avoids them
         recent_history = question_dedup_service.get_recent_questions(db, limit=15)
         avoid_questions = list(set(current_session_questions + recent_history))
 
@@ -93,13 +93,16 @@ def generate_question(state: InterviewState) -> InterviewState:
             "candidate_profile": state.get("candidate_profile", {}),
             "rag_context": state.get("rag_context", ""),
             "difficulty": state.get("current_difficulty", "medium"),
-            "previous_questions": avoid_questions
+            "category": state.get("config", {}).get("interview_type", "technical"),
+            "job_role": state.get("config", {}).get("job_role", "Software Engineer"),
+            "previous_questions": avoid_questions,
+            "excluded_questions": avoid_questions
         }
 
         # Attempt up to 4 times to generate a unique question
         selected_question = None
         for attempt in range(4):
-            question_data = granite_service.generate_question(context)
+            question_data = gemini_service.generate_question(context)
             cand_q = question_data.get("question", "").strip()
             
             is_dup, sim_score, reason = question_dedup_service.is_duplicate(
@@ -153,7 +156,7 @@ def generate_question(state: InterviewState) -> InterviewState:
 
 
 def evaluate_answer(state: InterviewState) -> InterviewState:
-    """Evaluate candidate answer using IBM Granite and update difficulty adaptively."""
+    """Evaluate candidate answer using Google Gemini and update difficulty adaptively."""
     answers = state.get("answers", [])
     questions = state.get("questions", [])
 
@@ -215,7 +218,7 @@ def update_state(state: InterviewState) -> InterviewState:
 
 
 def generate_report_node(state: InterviewState) -> InterviewState:
-    """Compile comprehensive final evaluation report using IBM Granite."""
+    """Compile comprehensive final evaluation report using Google Gemini."""
     report = evaluation_service.generate_final_report(state)
     report_dict = report.model_dump() if hasattr(report, "model_dump") else dict(report)
     state["report"] = report_dict

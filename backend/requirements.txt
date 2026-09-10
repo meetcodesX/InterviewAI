@@ -5,8 +5,9 @@ sqlalchemy
 psycopg2-binary
 pydantic>=2.0
 PyMuPDF
+pypdf
 langchain-text-splitters
 langgraph
 python-multipart
 httpx
-ibm-watsonx-ai
+google-genai

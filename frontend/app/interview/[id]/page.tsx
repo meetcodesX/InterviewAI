@@ -99,7 +99,7 @@ export default function InterviewPage() {
     setAnswer('');
     setError('');
     setLoading(true);
-    setLoadingMsg('IBM Granite is generating next question...');
+    setLoadingMsg('Gemini is generating next question...');
     try {
       const q = await api.nextQuestion(interviewId);
       if (q && q.question_id) {
@@ -117,7 +117,7 @@ export default function InterviewPage() {
 
   const handleFinish = async () => {
     setLoading(true);
-    setLoadingMsg('IBM Granite is compiling your interview report...');
+    setLoadingMsg('Compiling your interview report...');
     try {
       await api.finishInterview(interviewId);
       router.push(`/report/${interviewId}`);
@@ -178,8 +178,7 @@ export default function InterviewPage() {
           </span>
         </div>
         <div className="hidden md:flex gap-2">
-          <TechBadge text="AI: IBM Granite" />
-          <TechBadge text="RAG + ChromaDB" />
+          <TechBadge text="Powered by Gemini + RAG" />
           <TechBadge text="LangGraph" />
         </div>
       </div>
@@ -298,8 +297,7 @@ export default function InterviewPage() {
 
       {/* Mobile tech badge */}
       <div className="flex md:hidden justify-center gap-2 mt-8 pt-4 border-t border-slate-800">
-        <TechBadge text="AI: IBM Granite" />
-        <TechBadge text="RAG" />
+        <TechBadge text="Powered by Gemini + RAG" />
         <TechBadge text="LangGraph" />
       </div>
     </div>

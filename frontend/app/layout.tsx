@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "InterviewAI - Your AI-powered interview trainer",
-  description: "Agentic AI interview trainer powered by IBM Granite",
+  description: "Agentic AI interview trainer powered by Gemini + RAG",
 };
 
 export default function RootLayout({

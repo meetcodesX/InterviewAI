@@ -7,7 +7,7 @@ from fastapi import HTTPException
 
 from config import settings
 from schemas.schemas import CandidateProfile
-from services.granite_service import granite_service
+from services.gemini_service import gemini_service
 from services.resume_parser import parse_resume_text
 
 logger = logging.getLogger(__name__)
@@ -89,17 +89,17 @@ class ResumeService:
     def parse_resume(self, text: str, filename: str = "uploaded_file.pdf") -> CandidateProfile:
         """Extracts a structured CandidateProfile from resume text.
         
-        Attempts LLM extraction if Granite is connected, otherwise uses intelligent
+        Attempts LLM extraction if Gemini is connected, otherwise uses intelligent
         heuristic parsing. Never falls back to hardcoded demo data.
         """
         profile: CandidateProfile = None
 
-        # 1. Try IBM Granite if connected
-        if settings.is_ibm and granite_service.is_connected:
+        # 1. Try Google Gemini if connected
+        if settings.is_gemini and gemini_service.is_connected:
             try:
-                profile = granite_service.extract_profile(text)
+                profile = gemini_service.extract_profile(text)
             except Exception as e:
-                logger.warning(f"Granite profile extraction failed ({e}), using heuristic parser.")
+                logger.warning(f"Gemini profile extraction failed ({e}), using heuristic parser.")
 
         # 2. Heuristic parsing directly from the resume text
         if profile is None or not profile.name or profile.name == "Candidate":

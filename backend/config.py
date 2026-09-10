@@ -57,13 +57,12 @@ def _resolve_chroma_dir() -> str:
 class Settings:
     """Central configuration for the InterviewAI backend."""
 
-    # AI Provider - "ibm_granite" or "mock"
-    AI_PROVIDER: str = os.getenv("AI_PROVIDER", "mock")
+    # AI Provider - "gemini" or "mock"
+    AI_PROVIDER: str = os.getenv("AI_PROVIDER", "gemini")
 
-    # IBM watsonx.ai
-    IBM_API_KEY: str = os.getenv("IBM_API_KEY", "")
-    IBM_URL: str = os.getenv("IBM_URL", "https://us-south.ml.cloud.ibm.com")
-    IBM_GRANITE_MODEL: str = os.getenv("IBM_GRANITE_MODEL", "ibm/granite-3-8b-instruct")
+    # Google Gemini API
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
     # Consistent absolute database URL
     DATABASE_URL: str = _resolve_database_url()
@@ -87,11 +86,11 @@ class Settings:
 
     @property
     def is_mock(self) -> bool:
-        return self.AI_PROVIDER.lower() == "mock"
+        return self.AI_PROVIDER.lower() == "mock" or not self.GEMINI_API_KEY
 
     @property
-    def is_ibm(self) -> bool:
-        return self.AI_PROVIDER.lower() == "ibm_granite"
+    def is_gemini(self) -> bool:
+        return self.AI_PROVIDER.lower() == "gemini" and bool(self.GEMINI_API_KEY)
 
 
 settings = Settings()

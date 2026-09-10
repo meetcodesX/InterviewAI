@@ -1,12 +1,33 @@
-import Link from 'next/link';
+import Link from "next/link";
 
 export function Navbar() {
   return (
-    <nav className="flex items-center justify-between p-4 bg-slate-900 border-b border-slate-800">
-      <Link href="/" className="text-xl font-bold text-indigo-400">InterviewAI</Link>
-      <div className="flex gap-4">
-        <Link href="/dashboard" className="text-sm text-slate-300 hover:text-white">Dashboard</Link>
-        <Link href="/upload" className="text-sm bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg text-white font-medium transition-colors">Start Interview</Link>
+    <nav className="w-full border-b border-slate-800 bg-slate-950">
+      <div className="mx-auto flex min-h-[76px] w-full max-w-7xl items-center justify-between px-6 sm:px-8">
+        {/* Logo */}
+        <Link
+          href="/"
+          className="text-2xl font-bold tracking-tight text-indigo-400 transition-colors hover:text-indigo-300"
+        >
+          InterviewAI
+        </Link>
+
+        {/* Navigation */}
+        <div className="flex items-center gap-6">
+          <Link
+            href="/dashboard"
+            className="text-sm font-medium text-slate-300 transition-colors hover:text-white"
+          >
+            Dashboard
+          </Link>
+
+          <Link
+            href="/upload"
+            className="rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+          >
+            Start Interview
+          </Link>
+        </div>
       </div>
     </nav>
   );

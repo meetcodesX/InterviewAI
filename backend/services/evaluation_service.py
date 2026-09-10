@@ -2,7 +2,7 @@
 
 from typing import List, Optional, Dict, Any
 from schemas.schemas import EvaluationResponse, InterviewReport
-from services.granite_service import granite_service
+from services.gemini_service import gemini_service
 
 
 class EvaluationService:
@@ -17,7 +17,7 @@ class EvaluationService:
         experience_level: str = "fresher",
         rag_context: str = ""
     ) -> EvaluationResponse:
-        """Evaluate candidate answer with complete context passed to Granite."""
+        """Evaluate candidate answer with complete context passed to Gemini."""
         context = {
             "category": category,
             "difficulty": difficulty,
@@ -26,7 +26,7 @@ class EvaluationService:
             "experience_level": experience_level,
             "rag_context": rag_context
         }
-        return granite_service.evaluate_answer(question, answer, context)
+        return gemini_service.evaluate_answer(question, answer, context)
 
     def determine_next_difficulty(self, evaluations: List[dict], current_difficulty: str) -> str:
         """Adapts difficulty level based on candidate performance score."""
@@ -42,7 +42,7 @@ class EvaluationService:
         except ValueError:
             curr_idx = 1
 
-        # Strict specification:
+        # Adaptive difficulty:
         # score >= 8: increase difficulty
         # score 5-7: maintain current difficulty
         # score < 5: decrease difficulty
@@ -54,8 +54,8 @@ class EvaluationService:
         return levels[curr_idx]
 
     def generate_final_report(self, interview_data: dict) -> InterviewReport:
-        """Compile final report via Granite service."""
-        return granite_service.generate_report(interview_data)
+        """Compile final report via Gemini service."""
+        return gemini_service.generate_report(interview_data)
 
 
 evaluation_service = EvaluationService()

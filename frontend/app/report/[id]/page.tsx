@@ -195,8 +195,7 @@ export default function ReportPage() {
 
       {/* Tech footer */}
       <div className="flex justify-center gap-3 pt-4 border-t border-slate-800">
-        <TechBadge text="AI: IBM Granite" />
-        <TechBadge text="RAG + ChromaDB" />
+        <TechBadge text="Powered by Gemini + RAG" />
         <TechBadge text="LangGraph" />
       </div>
     </div>

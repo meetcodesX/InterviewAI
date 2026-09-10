@@ -109,7 +109,7 @@ async def create_interview(req: InterviewCreateRequest, db: Session = Depends(ge
 
 @router.post("/interview/answer")
 async def answer_question(req: AnswerSubmitRequest, db: Session = Depends(get_db)):
-    """Submit an answer, evaluate with IBM Granite, adapt difficulty, and persist state."""
+    """Submit an answer, evaluate with Google Gemini, adapt difficulty, and persist state."""
     clean_id = str(req.interview_id).strip()
     clean_qid = str(req.question_id).strip()
 
