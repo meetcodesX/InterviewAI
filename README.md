@@ -1,22 +1,47 @@
 # InterviewAI – Agentic Interview Trainer
-> An AI-powered, personalized interview trainer that uses IBM Granite, RAG, and LangGraph to deliver adaptive interview experiences.
+
+> An AI-powered, personalized interview trainer that uses **Google Gemini, RAG, and LangGraph** to deliver adaptive interview experiences.
+
 ---
 
 ## 📋 Project Overview
 
-InterviewAI is a full-stack web application that prepares users for job interviews by generating tailored question sets and providing real-time evaluation through an agentic AI pipeline. The system uses:
+InterviewAI is a full-stack web application that helps candidates prepare for technical and behavioral interviews.
 
-- **IBM Granite** as the primary LLM for question generation, answer evaluation, and profile extraction
-- **RAG (Retrieval-Augmented Generation)** with ChromaDB for role-specific knowledge retrieval
-- **LangGraph** for agentic adaptive interview orchestration
-- **Resume Parsing** via PyMuPDF for automatic candidate profiling
+The application:
+
+- Extracts candidate information from uploaded resumes
+- Builds a personalized candidate profile
+- Generates role- and skill-specific interview questions
+- Uses **Google Gemini** for AI-powered profile extraction, question generation, and answer evaluation
+- Uses a **RAG (Retrieval-Augmented Generation)** pipeline to provide role-specific knowledge and context
+- Uses **LangGraph** to orchestrate the adaptive interview workflow
+- Adjusts interview difficulty based on the candidate's performance
+- Generates a final interview report with scores, feedback, and skill-gap insights
+- Provides a dashboard for viewing interview statistics
 
 ### Core Flow
 
-```
-User → Upload Resume / Enter Profile → AI Profile Extraction → Interview Configuration
-→ RAG Context Retrieval → IBM Granite Question Generation → Candidate Answer
-→ AI Evaluation → Adaptive Next Question → ... → Final Report + Skill Gap Analysis
+```text
+User
+  ↓
+Upload Resume / Enter Profile
+  ↓
+Profile Extraction
+  ↓
+Interview Configuration
+  ↓
+RAG Context Retrieval
+  ↓
+Gemini Question Generation
+  ↓
+Candidate Answer
+  ↓
+Gemini Answer Evaluation
+  ↓
+Adaptive Next Question
+  ↓
+Final Report + Skill Gap Analysis
 ```
 
 ---
@@ -25,133 +50,217 @@ User → Upload Resume / Enter Profile → AI Profile Extraction → Interview C
 
 ```mermaid
 graph TD
-    subgraph Frontend["Frontend (Next.js)"]
+    subgraph Frontend["Frontend - Next.js"]
         LP[Landing Page]
-        UP[Upload/Profile]
-        CP[Configure]
+        UP[Upload / Profile]
+        CP[Configure Interview]
         IP[Interview Page]
         RP[Report Page]
         DB[Dashboard]
     end
 
-    subgraph Backend["Backend (FastAPI)"]
+    subgraph Backend["Backend - FastAPI"]
         API[API Routes]
         RS[Resume Service]
-        GS[Granite Service]
+        GS[Gemini Service]
         RAG[RAG Service]
         ES[Evaluation Service]
         AG[LangGraph Agent]
-        DB2[(SQLite)]
-        VDB[(ChromaDB)]
+        DB2[(SQLite / PostgreSQL)]
+        KB[Knowledge Base]
     end
 
-    subgraph External["External Services"]
-        IBM[IBM watsonx.ai / Granite]
+    subgraph External["External AI Service"]
+        GEM[Google Gemini API]
     end
 
-    LP --> UP --> CP --> IP --> RP
+    LP --> UP
+    UP --> CP
+    CP --> IP
+    IP --> RP
+    DB --> API
+
     IP --> API
     API --> RS
     API --> AG
+
     AG --> GS
     AG --> RAG
     AG --> ES
-    GS --> IBM
-    RAG --> VDB
+
+    GS --> GEM
+    RAG --> KB
     ES --> GS
     AG --> DB2
 ```
+
+### Architecture Highlights
+
+- **Frontend:** Next.js application with TypeScript and Tailwind CSS
+- **Backend:** FastAPI REST API
+- **AI:** Google Gemini through the `google-genai` SDK
+- **Agent orchestration:** LangGraph
+- **RAG:** Knowledge-base retrieval from the project's curated interview material
+- **Resume processing:** PyMuPDF
+- **Database:** SQLite locally, PostgreSQL supported for production
+- **Deployment:** Vercel
 
 ---
 
 ## 🛠️ Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
+|---|---|
 | Frontend | Next.js 14, React 18, TypeScript, Tailwind CSS |
 | Backend | Python, FastAPI |
-| AI/LLM | IBM Granite (via IBM watsonx.ai) |
-| Agent | LangGraph (StateGraph) |
-| RAG | LangChain, ChromaDB, sentence-transformers |
-| Resume Parser | PyMuPDF (fitz) |
-| Database | SQLite + SQLAlchemy ORM |
+| AI / LLM | Google Gemini (`gemini-2.5-flash`) |
+| AI SDK | Google Gen AI SDK (`google-genai`) |
+| Agent | LangGraph (`StateGraph`) |
+| RAG | LangChain text splitters + project knowledge base |
+| Resume Parser | PyMuPDF (`fitz`) |
+| Database | SQLite + SQLAlchemy ORM / PostgreSQL |
 | Charts | Recharts |
+| Deployment | Vercel |
 
 ---
 
-## 🤖 IBM Granite Integration
+## 🤖 Google Gemini Integration
 
-IBM Granite is the **primary LLM** powering all AI features:
+Google Gemini is the current AI provider used by InterviewAI.
 
-1. **Profile Extraction** – Parses resume text into structured candidate profiles
-2. **Question Generation** – Creates role-specific, difficulty-appropriate interview questions
-3. **Answer Evaluation** – Provides structured scoring (0-10) across multiple dimensions
-4. **Report Generation** – Produces comprehensive interview performance reports
+Gemini powers the main AI capabilities:
 
-### Configuration
+1. **Profile Extraction** – Converts resume text into a structured candidate profile
+2. **Question Generation** – Generates role-specific and difficulty-aware interview questions
+3. **Answer Evaluation** – Evaluates candidate answers and provides structured feedback
+4. **Interview Intelligence** – Supports the adaptive interview flow and final performance analysis
 
-The system supports two modes:
+### AI Provider Configuration
+
+The application supports:
 
 | Mode | `AI_PROVIDER` | Description |
-|------|--------------|-------------|
-| IBM Granite | `ibm_granite` | Production mode using IBM watsonx.ai |
-| Mock | `mock` | Development mode with realistic mock responses |
+|---|---|---|
+| Gemini | `gemini` | AI-powered mode using Google Gemini |
+| Mock | `mock` | Offline/development mode without an external AI API |
 
-To enable IBM Granite:
+### Environment Configuration
 
-```bash
-AI_PROVIDER=ibm_granite
-IBM_API_KEY=your_key_here
-IBM_PROJECT_ID=your_project_id
-IBM_URL=https://us-south.ml.cloud.ibm.com
-IBM_GRANITE_MODEL=ibm/granite-3-8b-instruct
+Create a `.env` file in the project root:
+
+```env
+AI_PROVIDER=gemini
+
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-2.5-flash
+
+DATABASE_URL=sqlite:///./interview_ai.db
+CHROMA_PERSIST_DIR=./chroma_db
+
+FRONTEND_URL=http://localhost:3000
+BACKEND_URL=http://localhost:8000
 ```
+
+> **Security:** Never commit your real `GEMINI_API_KEY` to GitHub. Keep it in `.env` locally and configure it as an environment variable in Vercel for deployment.
 
 ---
 
 ## 📚 RAG Architecture
 
-The knowledge base consists of 15+ curated markdown documents covering:
+InterviewAI uses Retrieval-Augmented Generation to ground interview generation and evaluation with relevant interview knowledge.
 
-- Python, Machine Learning, Data Science
-- Software Engineering, OOP, DSA, SQL
-- Deep Learning, NLP, Generative AI, RAG
-- System Design, DevOps
-- HR, Behavioral (STAR method)
+The knowledge base is stored under:
+
+```text
+backend/data/
+```
+
+It contains curated material related to areas such as:
+
+- Python
+- Machine Learning
+- Data Science
+- Software Engineering
+- OOP
+- DSA
+- SQL
+- Deep Learning
+- NLP
+- Generative AI
+- RAG
+- System Design
+- DevOps
+- HR and Behavioral Interviews
+- STAR-based interview preparation
 
 ### RAG Pipeline
 
+```text
+Knowledge Base Documents
+        ↓
+Text Splitting
+        ↓
+Relevant Context Retrieval
+        ↓
+Interview Context
+        ↓
+Gemini
+        ↓
+Question / Evaluation / Feedback
 ```
-Documents (.md) → Text Splitter (1000 chars, 200 overlap)
-→ sentence-transformers (all-MiniLM-L6-v2) → ChromaDB Vector Store
-→ Similarity Search → Context → IBM Granite → Response
-```
+
+The current implementation is intentionally lightweight so that the application can be deployed without the large ML/vector-database dependencies that caused oversized serverless bundles.
 
 ---
 
 ## 🔄 LangGraph Workflow
 
-The interview agent implements an adaptive workflow:
+The interview agent uses LangGraph to coordinate the adaptive interview process.
 
 ```mermaid
 graph LR
-    A[Load Profile] --> B[Retrieve RAG Context]
-    B --> C[Generate Question]
-    C --> D[Wait for Answer]
+    A[Load Candidate Profile]
+    --> B[Retrieve Relevant Context]
+
+    B --> C[Generate Interview Question]
+
+    C --> D[Candidate Answers]
+
     D --> E[Evaluate Answer]
-    E --> F{Complete?}
-    F -->|No| G[Update Difficulty]
+
+    E --> F{Interview Complete?}
+
+    F -->|No| G[Update Interview State]
     G --> B
-    F -->|Yes| H[Generate Report]
+
+    F -->|Yes| H[Generate Final Report]
 ```
 
 ### Adaptive Difficulty Logic
 
-- Score ≥ 8/10 → **Increase** difficulty (easy → medium → hard)
-- Score ≤ 4/10 → **Decrease** difficulty (hard → medium → easy)
-- Score 5-7/10 → **Maintain** current difficulty
+The interview can adapt its difficulty based on the candidate's evaluation score:
 
-The agent tracks skills tested to avoid repetition and considers previous Q&A context.
+- **Score ≥ 8/10** → Increase difficulty
+- **Score 5–7/10** → Maintain difficulty
+- **Score ≤ 4/10** → Decrease difficulty
+
+The agent also keeps track of previous questions and interview state to reduce unnecessary repetition.
+
+---
+
+## 📄 Resume Processing
+
+Candidates can upload a PDF resume.
+
+The backend uses **PyMuPDF** to:
+
+1. Read the uploaded PDF
+2. Extract text
+3. Send relevant text to the AI profile extraction pipeline
+4. Build a structured candidate profile
+5. Use the profile for personalized interview generation
+
+The application also supports manual profile creation.
 
 ---
 
@@ -159,63 +268,116 @@ The agent tracks skills tested to avoid repetition and considers previous Q&A co
 
 ### Prerequisites
 
+Install:
+
 - Python 3.10+
 - Node.js 18+
-- npm or yarn
-
-### Quick Start (One-Click for Windows)
-
-Simply double-click `run_app.bat` or run:
-```cmd
-run_app.bat
-```
-This automatically initializes the environment, launches the FastAPI backend and Next.js frontend, and opens the application at `http://localhost:3000`.
-
-Sample PDF resumes are included in `sample_resumes/` for immediate upload testing:
-- `sample_resumes/alex_sharma_ml_engineer.pdf`
-- `sample_resumes/priya_patel_fullstack_dev.pdf`
+- npm
+- Git
 
 ---
 
-### Manual Setup
+## ⚡ Quick Start – Windows
 
-### 1. Clone & Configure
+If the repository contains `run_app.bat`, you can start the application using:
 
-```bash
-cd interview-ai
-cp .env.example .env
-# Edit .env with your settings
+```cmd
+run_app.bat
 ```
 
-### 2. Backend Setup
+This starts the backend and frontend development servers.
+
+The application is available at:
+
+```text
+http://localhost:3000
+```
+
+Backend API:
+
+```text
+http://localhost:8000
+```
+
+Backend health check:
+
+```text
+http://localhost:8000/api/health
+```
+
+---
+
+## 🔧 Manual Setup
+
+### 1. Clone the Repository
+
+```bash
+git clone <your-repository-url>
+cd interview-ai
+```
+
+### 2. Configure Environment Variables
+
+Copy the example environment file:
+
+```bash
+cp .env.example .env
+```
+
+Then add your Gemini API key:
+
+```env
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-2.5-flash
+DATABASE_URL=sqlite:///./interview_ai.db
+FRONTEND_URL=http://localhost:3000
+BACKEND_URL=http://localhost:8000
+```
+
+### 3. Backend Setup
+
+From the project root:
 
 ```bash
 cd backend
 python -m venv venv
-
-# Windows
-venv\Scripts\activate
-# macOS/Linux
-source venv/bin/activate
-
-pip install -r requirements.txt
 ```
 
-### 3. Ingest Knowledge Base
+#### Windows
+
+```cmd
+venv\Scripts\activate
+```
+
+#### macOS / Linux
 
 ```bash
-cd backend
-python scripts/ingest_documents.py
+source venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
 ```
 
 ### 4. Start Backend
 
 ```bash
 cd backend
-uvicorn main:app --reload --port 8000
+python -m uvicorn main:app --host 127.0.0.1 --port 8000
+```
+
+The API will run at:
+
+```text
+http://localhost:8000
 ```
 
 ### 5. Frontend Setup
+
+Open another terminal:
 
 ```bash
 cd frontend
@@ -223,130 +385,253 @@ npm install
 npm run dev
 ```
 
-### 6. Open Application
+The frontend will run at:
 
-Visit `http://localhost:3000`
+```text
+http://localhost:3000
+```
 
 ---
 
-## ☁️ Vercel Deployment (Vercel Services)
+## 🧪 Local Development
 
-InterviewAI is structured as a full-stack monorepo using **Vercel Services**:
-- **Frontend Service**: Next.js 14 (`frontend/`)
-- **Backend Service**: FastAPI Python app (`backend/`, entrypoint `main:app`)
-- **Routing**: Single-domain routing configured in root `vercel.json` (`/api/*` -> backend, `/*` -> frontend).
+Before starting an interview, verify that the backend is running:
 
-### Step-by-Step Vercel Deployment
+```bash
+curl http://127.0.0.1:8000/api/health
+```
 
-1. **Import Repository to Vercel**:
-   - Go to [Vercel Dashboard](https://vercel.com/new).
-   - Import your GitHub repository (`meetcodesX/InterviewAI`).
-   - Leave the root directory as the repository root (`.`). Vercel will detect `vercel.json`.
+Expected response:
 
-2. **Configure Environment Variables in Vercel Dashboard**:
-   Go to **Project Settings → Environment Variables** and configure:
-   - `AI_PROVIDER`: `ibm_granite`
-   - `IBM_API_KEY`: Your real IBM watsonx / Cloud API key (Never commit this to Git)
-   - `IBM_PROJECT_ID`: Your watsonx.ai project GUID
-   - `IBM_URL`: `https://us-south.ml.cloud.ibm.com` (or your regional endpoint)
-   - `IBM_GRANITE_MODEL`: `ibm/granite-3-8b-instruct`
-   - `DATABASE_URL`: `sqlite:////tmp/interview_ai.db` (or external PostgreSQL connection string)
-   - `CHROMA_PERSIST_DIR`: `/tmp/chroma_db`
+```json
+{
+  "status": "ok"
+}
+```
 
-3. **Deploy**:
-   - Click **Deploy**. Both the Next.js frontend and FastAPI backend are deployed under the same domain.
-   - Test application health: `https://your-app.vercel.app/api/health` (returns `{"status": "ok", ...}`).
+If the frontend displays:
 
-### ⚠️ Serverless Deployment Considerations
+```text
+Failed to start interview
+```
 
-- **Filesystem Ephemerality**: In Vercel serverless environments, only `/tmp` is writable. Local SQLite databases and ChromaDB collections stored on `/tmp` are ephemeral and will not persist across container cold starts or regional instances. For persistent multi-user production data, configure a hosted PostgreSQL database (e.g. Supabase, Neon) via `DATABASE_URL` and a hosted vector database (e.g. Pinecone, Chroma Cloud).
-- **Cold Start Times**: Cold starts may take a few seconds during the initial invocation while `sentence-transformers` and ML dependencies load into memory.
+check that the FastAPI backend is running on port `8000` and inspect the backend terminal for the actual error.
+
+---
+
+## ☁️ Vercel Deployment
+
+InterviewAI is structured as a full-stack monorepo for Vercel deployment.
+
+### Services
+
+- **Frontend:** Next.js application under `frontend/`
+- **Backend:** FastAPI application under `backend/`
+- **Routing:** Root `vercel.json` routes `/api/*` requests to the backend service and other requests to the frontend
+
+### Deployment Steps
+
+1. Push the project to GitHub.
+2. Import the repository into Vercel.
+3. Keep the repository root as the project root.
+4. Vercel uses the root `vercel.json` configuration.
+5. Add the required environment variables.
+6. Deploy.
+
+### Vercel Environment Variables
+
+Configure:
+
+```text
+AI_PROVIDER=gemini
+GEMINI_API_KEY=<your Gemini API key>
+GEMINI_MODEL=gemini-2.5-flash
+
+DATABASE_URL=<production PostgreSQL connection string>
+
+FRONTEND_URL=<your Vercel frontend URL>
+BACKEND_URL=<your Vercel backend URL>
+```
+
+Do not commit real API keys.
+
+### Production Database
+
+SQLite is suitable for local development.
+
+For production/serverless deployment, use a managed PostgreSQL database because the Vercel serverless filesystem is not persistent.
+
+Examples include:
+
+- Neon
+- Supabase
+- Other managed PostgreSQL providers
+
+### Serverless Considerations
+
+The backend has been kept lightweight to reduce Vercel function bundle size.
+
+Avoid committing or bundling generated runtime data such as:
+
+```text
+backend/chroma_db/
+*.db
+*.sqlite
+__pycache__/
+venv/
+venv2/
+node_modules/
+.next/
+```
 
 ---
 
 ## 📝 Environment Variables
 
 | Variable | Required | Description |
-|----------|----------|-------------|
-| `AI_PROVIDER` | Yes | `ibm_granite` (production) or `mock` (local development) |
-| `IBM_API_KEY` | For IBM mode | IBM Cloud API key (Keep secret, configure in Vercel dashboard) |
-| `IBM_PROJECT_ID` | For IBM mode | watsonx.ai project ID |
-| `IBM_URL` | For IBM mode | IBM watsonx.ai endpoint |
-| `IBM_GRANITE_MODEL` | For IBM mode | Model ID (e.g., `ibm/granite-3-8b-instruct`) |
-| `DATABASE_URL` | No | SQLite or PostgreSQL URL (serverless uses `/tmp/interview_ai.db`) |
-| `CHROMA_PERSIST_DIR` | No | ChromaDB storage path (serverless uses `/tmp/chroma_db`) |
-| `FRONTEND_URL` | No | Frontend URL for CORS (default: `http://localhost:3000`) |
-| `BACKEND_URL` | No | Backend URL (default: `http://localhost:8000`) |
+|---|---|---|
+| `AI_PROVIDER` | Yes | `gemini` or `mock` |
+| `GEMINI_API_KEY` | For Gemini | Google Gemini API key |
+| `GEMINI_MODEL` | No | Gemini model, default: `gemini-2.5-flash` |
+| `DATABASE_URL` | No | SQLite or PostgreSQL connection string |
+| `CHROMA_PERSIST_DIR` | No | Local Chroma/runtime storage path if used by the environment |
+| `FRONTEND_URL` | No | Frontend URL used by the backend |
+| `BACKEND_URL` | No | Backend URL |
 
 ---
 
 ## 📡 API Documentation
 
 | Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/health` | GET | Health check with AI provider info |
-| `/api/resume/upload` | POST | Upload PDF resume |
-| `/api/profile/extract` | POST | Extract profile from text |
-| `/api/profile/manual` | POST | Create manual profile |
-| `/api/interview/create` | POST | Start new interview |
-| `/api/interview/answer` | POST | Submit answer for evaluation |
-| `/api/interview/next` | POST | Get next question |
-| `/api/interview/finish` | POST | Complete interview, get report |
+|---|---|---|
+| `/api/health` | GET | Backend and AI provider health check |
+| `/api/resume/upload` | POST | Upload a PDF resume |
+| `/api/profile/extract` | POST | Extract candidate profile from resume text |
+| `/api/profile/manual` | POST | Create a profile manually |
+| `/api/interview/create` | POST | Start a new interview |
+| `/api/interview/answer` | POST | Submit and evaluate an answer |
+| `/api/interview/next` | POST | Get the next interview question |
+| `/api/interview/finish` | POST | Complete the interview and generate the report |
 | `/api/interview/{id}` | GET | Get interview status |
 | `/api/report/{id}` | GET | Get interview report |
-| `/api/dashboard/stats` | GET | Dashboard statistics |
+| `/api/dashboard/stats` | GET | Get dashboard statistics |
 
 ---
 
 ## 🎯 Demo Mode
 
-Click **"Try Demo"** on the landing page to start with a pre-configured profile:
+The landing page includes a **Try Demo** flow for quickly demonstrating the application.
 
-- **Name:** Alex Sharma
-- **Role:** ML Engineer
-- **Skills:** Python, Machine Learning, Deep Learning, RAG, NLP
-- **Experience:** Fresher
+The demo can start with a pre-configured candidate profile instead of requiring an immediate resume upload.
 
-This allows instant demonstration without resume upload or manual entry.
+Example profile:
+
+```text
+Name: Alex Sharma
+Role: ML Engineer
+Skills: Python, Machine Learning, Deep Learning, RAG, NLP
+Experience: Fresher
+```
+
+This makes it possible to demonstrate the complete interview workflow quickly.
+
+---
+
+## 🖥️ Application Flow
+
+### 1. Landing Page
+
+Introduces InterviewAI and provides the option to start an interview or try the demo.
+
+### 2. Resume / Profile
+
+The candidate can:
+
+- Upload a resume
+- Extract a profile automatically
+- Enter profile information manually
+
+### 3. Interview Configuration
+
+The candidate configures the interview, including the desired interview mode and difficulty.
+
+### 4. Interview
+
+The AI:
+
+- Generates questions
+- Evaluates answers
+- Provides feedback
+- Adapts subsequent questions based on performance
+
+### 5. Final Report
+
+After completion, the application provides an interview performance summary.
+
+### 6. Dashboard
+
+The dashboard provides an overview of interview activity and performance statistics.
 
 ---
 
 ## 🏗️ Project Structure
 
-```
+```text
 interview-ai/
+│
 ├── frontend/
-│   ├── app/                    # Next.js pages
-│   │   ├── page.tsx           # Landing page
-│   │   ├── upload/            # Resume upload
-│   │   ├── configure/         # Interview config
-│   │   ├── interview/[id]/    # Interview UI
-│   │   ├── report/[id]/       # Report page
-│   │   └── dashboard/         # Dashboard
-│   ├── components/            # Reusable UI components
-│   ├── lib/api.ts             # API client
-│   └── types/index.ts         # TypeScript types
+│   ├── app/
+│   │   ├── page.tsx                 # Landing page
+│   │   ├── upload/                  # Resume upload
+│   │   ├── configure/               # Interview configuration
+│   │   ├── interview/[id]/          # Interview UI
+│   │   ├── report/[id]/             # Report page
+│   │   └── dashboard/               # Dashboard
+│   │
+│   ├── components/                  # Reusable UI components
+│   ├── lib/
+│   │   └── api.ts                   # API client
+│   ├── types/
+│   │   └── index.ts                 # TypeScript types
+│   └── package.json
 │
 ├── backend/
-│   ├── main.py                # FastAPI entry point
-│   ├── config.py              # Settings
-│   ├── api/                   # API route handlers
-│   ├── agents/                # LangGraph agent
-│   ├── services/              # Business logic
-│   │   ├── granite_service.py # IBM Granite integration
-│   │   ├── rag_service.py     # RAG pipeline
-│   │   ├── resume_service.py  # Resume parsing
-│   │   └── evaluation_service.py
-│   ├── models/                # SQLAlchemy models
-│   ├── schemas/               # Pydantic schemas
-│   ├── database/              # DB setup
-│   ├── data/                  # Knowledge base documents
-│   └── scripts/               # Utility scripts
+│   ├── main.py                      # FastAPI entry point
+│   ├── config.py                    # Application configuration
+│   ├── api/                         # API route handlers
+│   ├── agents/                      # LangGraph interview agent
+│   ├── services/
+│   │   ├── gemini_service.py        # Google Gemini integration
+│   │   ├── rag_service.py           # RAG pipeline
+│   │   ├── resume_service.py        # Resume parsing
+│   │   └── evaluation_service.py    # Answer evaluation
+│   ├── models/                      # SQLAlchemy models
+│   ├── schemas/                     # Pydantic schemas
+│   ├── database/                    # Database configuration
+│   ├── data/                        # Interview knowledge base
+│   ├── scripts/                     # Utility scripts
+│   ├── tests/                       # Backend tests
+│   └── requirements.txt
 │
-├── .env.example
+├── sample_resumes/                  # Sample PDF resumes
+├── scripts/                         # Project utility scripts
+├── .env.example                     # Environment variable template
+├── .gitignore
 ├── docker-compose.yml
+├── run_app.bat
+├── vercel.json
 └── README.md
 ```
+
+---
+
+## 🔐 Security
+
+- Never commit API keys or other secrets.
+- Store local secrets in `.env`.
+- Add production secrets through Vercel Environment Variables.
+- Keep `.env` excluded through `.gitignore`.
+- Do not place secrets directly inside Python or TypeScript source files.
 
 ---
 
@@ -362,22 +647,42 @@ interview-ai/
 - [ ] Mobile-responsive PWA
 - [ ] Collaborative interview practice
 - [ ] Custom knowledge base uploads
+- [ ] More advanced personalized RAG retrieval
+- [ ] Interview history and long-term candidate progress tracking
 
 ---
 
-## 🏆 Competition Demo Flow (3-5 minutes)
+## 🏆 Competition Demo Flow
 
-1. **Open landing page** → Show modern UI, "Powered by IBM Granite"
-2. **Click "Try Demo"** → Pre-filled ML Engineer profile
-3. **Configure interview** → Select Adaptive difficulty, 5 questions
-4. **Answer Question 1** with a strong, detailed answer → Show high score evaluation
-5. **Answer Question 2** with a weak answer → Show lower score, constructive feedback
-6. **Observe adaptive difficulty** → Agent adjusts to easier question
-7. **Complete interview** → View comprehensive final report
-8. **Highlight** → IBM Granite + RAG + LangGraph + Adaptive behavior
+A recommended 3–5 minute demonstration:
+
+1. **Open the landing page**
+2. **Click "Try Demo"**
+3. **Configure the interview**
+4. **Answer the first question with a strong answer**
+5. **Show the AI evaluation and feedback**
+6. **Give a weaker answer to demonstrate adaptive behavior**
+7. **Show the next question and changed difficulty**
+8. **Complete the interview**
+9. **Show the final report**
+10. **Show the dashboard and interview statistics**
+
+### Key Features to Highlight
+
+- Personalized interview generation
+- Google Gemini AI integration
+- RAG-based contextual interview questions
+- LangGraph agentic workflow
+- Adaptive interview difficulty
+- Resume-based candidate profiling
+- Real-time answer evaluation
+- Final performance report
+- Full-stack deployment architecture
 
 ---
 
 ## 📜 License
 
-Built for AICTE 2026 Innovation Challenge. Educational use.
+Built for the **AICTE 2026 Innovation Challenge**.
+
+Educational and demonstration use.
